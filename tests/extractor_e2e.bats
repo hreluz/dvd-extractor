@@ -26,6 +26,7 @@ teardown() {
 
     run bash "$SCRIPT_DIR/extractor.sh" <<EOF
 
+
 $ISO
 
 
@@ -49,6 +50,7 @@ EOF
 
     run bash "$SCRIPT_DIR/extractor.sh" <<EOF
 2
+
 $ISO
 
 
@@ -69,6 +71,7 @@ EOF
 
     run bash "$SCRIPT_DIR/extractor.sh" <<EOF
 3
+
 $ISO
 
 
@@ -90,6 +93,7 @@ EOF
 
     run bash "$SCRIPT_DIR/extractor.sh" <<EOF
 
+
 $ISO
 custom_name
 
@@ -110,6 +114,7 @@ EOF
 
     run bash "$SCRIPT_DIR/extractor.sh" <<EOF
 
+
 $ISO
 
 $TEST_TMP/out_here
@@ -128,6 +133,7 @@ EOF
 
     run bash "$SCRIPT_DIR/extractor.sh" <<EOF
 
+
 $ISO
 
 $TEST_TMP/does/not/exist/yet
@@ -143,6 +149,7 @@ EOF
     cd "$TEST_TMP"
 
     run bash "$SCRIPT_DIR/extractor.sh" <<EOF
+
 
 /no/such/file.iso
 $ISO
@@ -163,6 +170,7 @@ EOF
 
     run bash "$SCRIPT_DIR/extractor.sh" <<EOF
 
+
 q
 EOF
 
@@ -171,13 +179,14 @@ EOF
     [ ! -d "movie_extracted" ]
 }
 
-@test "extractor.sh goes back to the extract-mode menu from the ISO prompt" {
+@test "extractor.sh goes back to the source menu from the ISO prompt" {
     cd "$TEST_TMP"
 
     run bash "$SCRIPT_DIR/extractor.sh" <<EOF
 
+
 b
-2
+
 $ISO
 
 
@@ -187,7 +196,7 @@ EOF
 
     assert_success
     assert_output --partial "Finished"
-    refute_output --partial "Audios:"
+    [ "$(echo "$output" | grep -c "Where do you want to read the DVD from?")" -eq 2 ]
     [ -f "movie_extracted/title_3/videos/chapter_01.mp4" ]
 }
 
@@ -197,6 +206,7 @@ EOF
     run bash "$SCRIPT_DIR/extractor.sh" <<EOF
 9
 1
+
 $ISO
 
 
@@ -222,10 +232,198 @@ EOF
     [ ! -d "movie_extracted" ]
 }
 
+@test "extractor.sh reprompts instead of exiting on an invalid source choice" {
+    cd "$TEST_TMP"
+
+    run bash "$SCRIPT_DIR/extractor.sh" <<EOF
+
+9
+
+$ISO
+
+
+
+Y
+EOF
+
+    assert_success
+    assert_output --partial "Invalid choice: 9"
+    assert_output --partial "Finished"
+    [ -f "movie_extracted/title_3/videos/chapter_01.mp4" ]
+}
+
+@test "extractor.sh quits cleanly from the source menu" {
+    cd "$TEST_TMP"
+
+    run bash "$SCRIPT_DIR/extractor.sh" <<EOF
+
+q
+EOF
+
+    assert_success
+    assert_output --partial "Exiting."
+    [ ! -d "movie_extracted" ]
+}
+
+@test "extractor.sh goes back to the extract-mode menu from the source menu" {
+    cd "$TEST_TMP"
+
+    run bash "$SCRIPT_DIR/extractor.sh" <<EOF
+
+b
+2
+
+$ISO
+
+
+
+Y
+EOF
+
+    assert_success
+    assert_output --partial "Finished"
+    refute_output --partial "Audios:"
+    [ -f "movie_extracted/title_3/videos/chapter_01.mp4" ]
+}
+
+@test "extractor.sh reprompts for a source when no DVD drives are detected" {
+    cd "$TEST_TMP"
+
+    export DVD_DRIVE_GLOB="$TEST_TMP/no-such-drive-*"
+
+    run bash "$SCRIPT_DIR/extractor.sh" <<EOF
+
+2
+
+$ISO
+
+
+
+Y
+EOF
+
+    assert_success
+    assert_output --partial "No DVD drives detected."
+    assert_output --partial "Finished"
+    [ -f "movie_extracted/title_3/videos/chapter_01.mp4" ]
+}
+
+@test "extractor.sh reads directly from a single detected DVD drive" {
+    cd "$TEST_TMP"
+
+    FAKE_DRIVE="$TEST_TMP/sr0"
+    : > "$FAKE_DRIVE"
+    export DVD_DRIVE_GLOB="$FAKE_DRIVE"
+
+    run bash "$SCRIPT_DIR/extractor.sh" <<EOF
+
+2
+
+
+
+Y
+EOF
+
+    assert_success
+    assert_output --partial "Using DVD drive: $FAKE_DRIVE"
+    assert_output --partial "Finished"
+    [ -f "sr0_extracted/title_3/videos/chapter_01.mp4" ]
+}
+
+@test "extractor.sh lets the user pick among multiple detected DVD drives" {
+    cd "$TEST_TMP"
+
+    : > "$TEST_TMP/sr0"
+    : > "$TEST_TMP/sr1"
+    export DVD_DRIVE_GLOB="$TEST_TMP/sr*"
+
+    run bash "$SCRIPT_DIR/extractor.sh" <<EOF
+
+2
+2
+
+
+
+Y
+EOF
+
+    assert_success
+    assert_output --partial "Multiple DVD drives found:"
+    assert_output --partial "Finished"
+    [ -f "sr1_extracted/title_3/videos/chapter_01.mp4" ]
+}
+
+@test "extractor.sh reprompts on an invalid drive choice" {
+    cd "$TEST_TMP"
+
+    : > "$TEST_TMP/sr0"
+    : > "$TEST_TMP/sr1"
+    export DVD_DRIVE_GLOB="$TEST_TMP/sr*"
+
+    run bash "$SCRIPT_DIR/extractor.sh" <<EOF
+
+2
+9
+1
+
+
+
+Y
+EOF
+
+    assert_success
+    assert_output --partial "Invalid choice: 9"
+    assert_output --partial "Finished"
+    [ -f "sr0_extracted/title_3/videos/chapter_01.mp4" ]
+}
+
+@test "extractor.sh quits cleanly from the drive selection prompt" {
+    cd "$TEST_TMP"
+
+    : > "$TEST_TMP/sr0"
+    : > "$TEST_TMP/sr1"
+    export DVD_DRIVE_GLOB="$TEST_TMP/sr*"
+
+    run bash "$SCRIPT_DIR/extractor.sh" <<EOF
+
+2
+q
+EOF
+
+    assert_success
+    assert_output --partial "Exiting."
+    [ ! -d "sr0_extracted" ]
+}
+
+@test "extractor.sh goes back to the source menu from the drive selection prompt" {
+    cd "$TEST_TMP"
+
+    : > "$TEST_TMP/sr0"
+    : > "$TEST_TMP/sr1"
+    export DVD_DRIVE_GLOB="$TEST_TMP/sr*"
+
+    run bash "$SCRIPT_DIR/extractor.sh" <<EOF
+
+2
+b
+1
+$ISO
+
+
+
+Y
+EOF
+
+    assert_success
+    assert_output --partial "Finished"
+    [ -f "movie_extracted/title_3/videos/chapter_01.mp4" ]
+}
+
 @test "extractor.sh reprompts instead of exiting on an invalid title choice" {
     cd "$TEST_TMP"
 
     run bash "$SCRIPT_DIR/extractor.sh" <<EOF
+
 
 $ISO
 
@@ -246,6 +444,7 @@ EOF
 
     run bash "$SCRIPT_DIR/extractor.sh" <<EOF
 
+
 $ISO
 
 
@@ -263,6 +462,7 @@ EOF
     : > "$TEST_TMP/not_a_dir"
 
     run bash "$SCRIPT_DIR/extractor.sh" <<EOF
+
 
 $ISO
 
@@ -283,6 +483,7 @@ EOF
 
     run bash "$SCRIPT_DIR/extractor.sh" <<EOF
 
+
 $ISO
 
 q
@@ -297,6 +498,7 @@ EOF
     cd "$TEST_TMP"
 
     run bash "$SCRIPT_DIR/extractor.sh" <<EOF
+
 
 $ISO
 
@@ -316,6 +518,7 @@ EOF
     cd "$TEST_TMP"
 
     run bash "$SCRIPT_DIR/extractor.sh" <<EOF
+
 
 $ISO
 

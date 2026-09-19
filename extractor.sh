@@ -52,33 +52,131 @@ main() {
         echo
 
         # -------------------------------------
-        # Ask for ISO
+        # Ask for the source: ISO file or DVD disc
         # -------------------------------------
 
         while true; do
-            if ! read -rp "Enter the path to the DVD ISO (b to go back, q to quit): " ISO; then
+
+            while true; do
+                echo "Where do you want to read the DVD from?"
+                echo "  1) ISO file"
+                echo "  2) DVD disc (optical drive)"
+                echo "  b) Back"
+                echo "  q) Quit"
+
+                if ! read -rp "Choose [1]: " SOURCE_CHOICE; then
+                    echo
+                    exit 1
+                fi
+
+                if [[ "$SOURCE_CHOICE" =~ ^[Qq]$ ]]; then
+                    echo "Exiting."
+                    exit 0
+                fi
+
+                if [[ "$SOURCE_CHOICE" =~ ^[Bb]$ ]]; then
+                    echo
+                    continue 3
+                fi
+
+                if SOURCE_TYPE=$(resolve_source_type "$SOURCE_CHOICE"); then
+                    break
+                fi
+
                 echo
-                exit 1
-            fi
-            ISO=$(strip_quotes "$ISO")
-
-            if [[ "$ISO" =~ ^[Qq]$ ]]; then
-                echo "Exiting."
-                exit 0
-            fi
-
-            if [[ "$ISO" =~ ^[Bb]$ ]]; then
+                echo "Invalid choice: $SOURCE_CHOICE"
                 echo
-                continue 2
-            fi
-
-            if [ -f "$ISO" ]; then
-                break
-            fi
+            done
 
             echo
-            echo "ISO not found: $ISO"
-            echo
+
+            if [ "$SOURCE_TYPE" = "iso" ]; then
+
+                # -------------------------------------
+                # Ask for ISO path
+                # -------------------------------------
+
+                while true; do
+                    if ! read -rp "Enter the path to the DVD ISO (b to go back, q to quit): " ISO; then
+                        echo
+                        exit 1
+                    fi
+                    ISO=$(strip_quotes "$ISO")
+
+                    if [[ "$ISO" =~ ^[Qq]$ ]]; then
+                        echo "Exiting."
+                        exit 0
+                    fi
+
+                    if [[ "$ISO" =~ ^[Bb]$ ]]; then
+                        echo
+                        continue 2
+                    fi
+
+                    if [ -f "$ISO" ]; then
+                        break
+                    fi
+
+                    echo
+                    echo "ISO not found: $ISO"
+                    echo
+                done
+
+            else
+
+                # -------------------------------------
+                # Detect and select a DVD drive
+                # -------------------------------------
+
+                mapfile -t DRIVES < <(list_dvd_drives)
+
+                if [ "${#DRIVES[@]}" -eq 0 ]; then
+                    echo "No DVD drives detected."
+                    echo
+                    continue
+                fi
+
+                if [ "${#DRIVES[@]}" -eq 1 ]; then
+                    ISO="${DRIVES[0]}"
+                    echo "Using DVD drive: $ISO"
+                else
+                    echo "Multiple DVD drives found:"
+                    for i in "${!DRIVES[@]}"; do
+                        printf "  %d) %s\n" "$((i + 1))" "${DRIVES[$i]}"
+                    done
+                    echo
+
+                    while true; do
+                        if ! read -rp "Select drive [1] (b to go back, q to quit): " DRIVE_CHOICE; then
+                            echo
+                            exit 1
+                        fi
+
+                        if [[ "$DRIVE_CHOICE" =~ ^[Qq]$ ]]; then
+                            echo "Exiting."
+                            exit 0
+                        fi
+
+                        if [[ "$DRIVE_CHOICE" =~ ^[Bb]$ ]]; then
+                            echo
+                            continue 2
+                        fi
+
+                        DRIVE_CHOICE="${DRIVE_CHOICE:-1}"
+
+                        if [[ "$DRIVE_CHOICE" =~ ^[0-9]+$ ]] && [ "$DRIVE_CHOICE" -ge 1 ] && [ "$DRIVE_CHOICE" -le "${#DRIVES[@]}" ]; then
+                            ISO="${DRIVES[$((DRIVE_CHOICE - 1))]}"
+                            break
+                        fi
+
+                        echo
+                        echo "Invalid choice: $DRIVE_CHOICE"
+                        echo
+                    done
+                fi
+            fi
+
+            break
         done
 
         break

@@ -114,3 +114,57 @@ setup() {
     run resolve_extract_mode '9'
     assert_failure
 }
+
+# -------------------------------------
+# resolve_source_type
+# -------------------------------------
+
+@test "resolve_source_type defaults to iso on a blank choice" {
+    run resolve_source_type ''
+    assert_success
+    assert_output 'iso'
+}
+
+@test "resolve_source_type maps 1 to iso" {
+    run resolve_source_type '1'
+    assert_success
+    assert_output 'iso'
+}
+
+@test "resolve_source_type maps 2 to disc" {
+    run resolve_source_type '2'
+    assert_success
+    assert_output 'disc'
+}
+
+@test "resolve_source_type rejects an unknown choice" {
+    run resolve_source_type '9'
+    assert_failure
+}
+
+# -------------------------------------
+# list_dvd_drives
+# -------------------------------------
+
+@test "list_dvd_drives lists entries matching the configured glob" {
+    TMP_DIR="$(mktemp -d)"
+    : > "$TMP_DIR/sr0"
+    : > "$TMP_DIR/sr1"
+
+    DVD_DRIVE_GLOB="$TMP_DIR/sr*" run list_dvd_drives
+    assert_success
+    assert_line "$TMP_DIR/sr0"
+    assert_line "$TMP_DIR/sr1"
+
+    rm -rf "$TMP_DIR"
+}
+
+@test "list_dvd_drives is empty when nothing matches the glob" {
+    TMP_DIR="$(mktemp -d)"
+
+    DVD_DRIVE_GLOB="$TMP_DIR/sr*" run list_dvd_drives
+    assert_success
+    assert_output ''
+
+    rm -rf "$TMP_DIR"
+}

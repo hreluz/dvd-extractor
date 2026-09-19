@@ -48,6 +48,11 @@ live in `lib/`.
   `DIR/NAME_extracted/title_TITLE` path (strips a trailing slash from `DIR`)
 - `resolve_extract_mode` — maps the "what to extract" menu choice (`""`/`1`/`2`/`3`) to
   `both`/`both`/`video`/`audio`; returns non-zero for anything else
+- `resolve_source_type` — maps the "where to read the DVD from" menu choice (`""`/`1`/`2`) to
+  `iso`/`iso`/`disc`; returns non-zero for anything else
+- `list_dvd_drives` — lists existing device nodes matching `$DVD_DRIVE_GLOB` (defaults to
+  `/dev/sr*`), one per line; the env var is the test seam (real optical drives on Linux enumerate
+  as `/dev/sr0`, `/dev/sr1`, ...)
 
 `lib/scan.sh`:
 
@@ -67,9 +72,16 @@ the corresponding `tests/lib/*.bats` file — don't grow `extractor.sh` itself b
 1. Dependency checks
 2. Prompt for what to extract per chapter — video+MP3 / video only / MP3 only (`EXTRACT_MODE`, via
    `resolve_extract_mode`, defaults to both) — asked first since it doesn't depend on the ISO/title
-3. Prompt for ISO path, validate it exists
-4. Prompt for output name (defaults to ISO basename)
-5. Prompt for output directory (defaults to `.`)
+3. Prompt for the source — ISO file or DVD disc (`SOURCE_TYPE`, via `resolve_source_type`, defaults
+   to ISO):
+   - `iso`: prompt for the ISO path, validate it exists (`-f`)
+   - `disc`: `list_dvd_drives` enumerates optical drives; zero found re-prompts the source menu,
+     exactly one is used automatically, more than one prompts the user to pick — either way `ISO`
+     ends up holding a device path (e.g. `/dev/sr0`) instead of a file path, and every later step
+     (scan, extraction) treats it identically to an ISO file since `HandBrakeCLI -i` accepts both
+4. Prompt for output name (defaults to ISO/device basename)
+5. Prompt for output directory (defaults to `.`; re-prompts if the path exists and isn't a
+   directory — `mkdir -p` handles the nonexistent case)
 6. `HandBrakeCLI --scan --main-feature` to enumerate titles and detect the recommended one
 7. Parse scan output to list titles, durations, and chapter counts
 8. Prompt for title selection, validate it
@@ -95,5 +107,10 @@ the corresponding `tests/lib/*.bats` file — don't grow `extractor.sh` itself b
   text format — if you change how titles/chapters are parsed, verify against real `--scan` output,
   since HandBrake's output format is not guaranteed stable across versions.
 - Preserve `set -e` behavior; don't silently swallow errors from `HandBrakeCLI`/`ffmpeg`.
+- Every interactive prompt in `main()` re-prompts on invalid input instead of exiting, and accepts
+  `q`/`Q` to quit; every prompt after the first in its group also accepts `b`/`B` to go back to the
+  previous question (`continue N` back to the enclosing `while true` — count the loop nesting at
+  the point of the `continue`, don't assume it matches visual indentation depth). Follow this
+  pattern for any new prompt.
 - This is a personal utility script — keep it simple and dependency-free (plain bash + the two
   external CLIs). Avoid introducing additional tooling unless the user asks for it.

@@ -35,3 +35,22 @@ resolve_extract_mode() {
         *) return 1 ;;
     esac
 }
+
+resolve_source_type() {
+    local choice="$1"
+    case "$choice" in
+        ""|1) printf 'iso' ;;
+        2) printf 'disc' ;;
+        *) return 1 ;;
+    esac
+}
+
+list_dvd_drives() {
+    local pattern="${DVD_DRIVE_GLOB:-/dev/sr*}"
+    local drive
+    for drive in $pattern; do
+        if [ -e "$drive" ]; then
+            printf '%s\n' "$drive"
+        fi
+    done
+}
