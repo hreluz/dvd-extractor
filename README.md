@@ -45,17 +45,26 @@ Each chapter of the selected title is extracted individually:
 - **Video**: MP4 via HandBrakeCLI, `Fast 480p30` preset.
 - **Audio**: MP3 extracted from each video with ffmpeg (`libmp3lame`, 192k).
 
+## Project layout
+
+- `extractor.sh` — entry point; sources `lib/` and runs the interactive flow.
+- `lib/dependencies.sh` — checks `HandBrakeCLI`/`ffmpeg` are installed.
+- `lib/input.sh` — quote stripping and output name/path defaults.
+- `lib/scan.sh` — parsing and validation of HandBrakeCLI `--scan` output.
+
 ## Testing
 
 Tests use [bats-core](https://github.com/bats-core/bats-core):
 
 ```bash
 sudo apt install bats bats-support bats-assert
-bats tests/
+bats -r tests/
 ```
 
-- `tests/extractor.bats` — unit tests for the parsing/validation functions (title/duration/chapter
-  parsing, quote stripping, title validation), run by sourcing `extractor.sh`.
+(`-r` is required to pick up the nested `tests/lib/` unit tests.)
+
+- `tests/lib/dependencies.bats`, `tests/lib/input.bats`, `tests/lib/scan.bats` — unit tests for
+  each `lib/` module, run by sourcing that module directly.
 - `tests/extractor_e2e.bats` — end-to-end smoke tests that run the full interactive script with
   `HandBrakeCLI`/`ffmpeg` replaced by stub scripts under `tests/mocks/`, so no real DVD ISO is
   needed.

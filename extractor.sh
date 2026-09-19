@@ -2,97 +2,11 @@
 
 set -e
 
-# -------------------------------------
-# Functions
-# -------------------------------------
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-check_dependencies() {
-    if ! command -v HandBrakeCLI >/dev/null 2>&1; then
-        echo "Error: HandBrakeCLI is not installed."
-        echo "Install with:"
-        echo "sudo apt install handbrake-cli"
-        return 1
-    fi
-
-    if ! command -v ffmpeg >/dev/null 2>&1; then
-        echo "Error: ffmpeg is not installed."
-        echo "Install with:"
-        echo "sudo apt install ffmpeg"
-        return 1
-    fi
-}
-
-strip_quotes() {
-    local value="$1"
-    value="${value%\"}"
-    value="${value#\"}"
-    value="${value%\'}"
-    value="${value#\'}"
-    printf '%s' "$value"
-}
-
-default_name_from_iso() {
-    local iso="$1"
-    local name
-    name=$(basename "$iso")
-    printf '%s' "${name%.*}"
-}
-
-parse_recommended_title() {
-    local scan="$1"
-    echo "$scan" |
-        sed -n 's/.*Found main feature title \([0-9]\+\).*/\1/p' |
-        head -1
-}
-
-parse_titles() {
-    local scan="$1"
-    echo "$scan" |
-        sed -n 's/^+ title \([0-9]\+\):/\1/p'
-}
-
-get_title_block() {
-    local scan="$1"
-    local title="$2"
-    echo "$scan" |
-        sed -n "/^+ title ${title}:/,/^+ title /p"
-}
-
-get_duration() {
-    local title_block="$1"
-    echo "$title_block" |
-        grep "duration:" |
-        head -1 |
-        sed 's/.*duration: //'
-}
-
-get_chapter_count() {
-    local title_block="$1"
-    echo "$title_block" |
-        sed -n '/+ chapters:/,/+ audio tracks:/p' |
-        grep -E '^[[:space:]]+\+ [0-9]+:' |
-        wc -l
-}
-
-is_valid_title() {
-    local candidate="$1"
-    shift
-    local t
-    for t in "$@"; do
-        if [ "$t" = "$candidate" ]; then
-            return 0
-        fi
-    done
-    return 1
-}
-
-resolve_output_path() {
-    local output_dir="$1"
-    local name="$2"
-    local title="$3"
-    output_dir="${output_dir%/}"
-    printf '%s/%s_extracted/title_%s' "$output_dir" "$name" "$title"
-}
+source "$SCRIPT_DIR/lib/dependencies.sh"
+source "$SCRIPT_DIR/lib/input.sh"
+source "$SCRIPT_DIR/lib/scan.sh"
 
 main() {
     echo "======================================"

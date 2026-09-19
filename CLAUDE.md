@@ -4,23 +4,24 @@ This file gives Claude Code guidance for working in this repository.
 
 ## Project overview
 
-DVD Chapter Extractor: a single interactive bash script (`extractor.sh`) that rips a DVD ISO into
+DVD Chapter Extractor: an interactive bash tool (`extractor.sh` + `lib/`) that rips a DVD ISO into
 per-chapter MP4 videos and MP3 audio files, using `HandBrakeCLI` for video extraction and `ffmpeg`
-for audio extraction. There is no build system or package manager — the project is the one script
-plus its `tests/` suite.
+for audio extraction. There is no build system or package manager — the project is the script, its
+`lib/` modules, and the `tests/` suite.
 
 ## Running / testing changes
 
 Automated tests use bats-core and don't need a real DVD ISO — HandBrakeCLI/ffmpeg are stubbed:
 
 ```bash
-bats tests/
+bats -r tests/
 ```
 
-Run this after any change to `extractor.sh`. See `tests/extractor.bats` (unit tests for the
-parsing/validation functions) and `tests/extractor_e2e.bats` (full-script smoke tests driven via
-stdin with mocked `HandBrakeCLI`/`ffmpeg` from `tests/mocks/`). If bats isn't installed, ask the
-user to run `sudo apt install bats bats-support bats-assert` themselves (needs a password).
+`-r` is required — it recurses into `tests/lib/`, which plain `bats tests/` skips. Run this after
+any change to `extractor.sh` or `lib/`. See `tests/lib/*.bats` (unit tests for each `lib/` module)
+and `tests/extractor_e2e.bats` (full-script smoke tests driven via stdin with mocked
+`HandBrakeCLI`/`ffmpeg` from `tests/mocks/`). If bats isn't installed, ask the user to run
+`sudo apt install bats bats-support bats-assert` themselves (needs a password).
 
 For a final sanity check beyond the test suite, run the script against a real DVD ISO:
 
@@ -30,22 +31,34 @@ For a final sanity check beyond the test suite, run the script against a real DV
 
 ## Script structure
 
-`extractor.sh` defines a set of small functions, then a `main()` that runs the interactive flow
-end to end (with `set -e`). `main()` only executes when the script is run directly — sourcing the
-file (as the unit tests do) loads the functions without running `main`.
+`extractor.sh` is the entry point: it sources the `lib/` modules, defines `main()` (the
+interactive flow, run with `set -e`), and only calls `main()` when executed directly — sourcing
+the file (as `lib/`-adjacent tooling might) loads nothing extra since the functions themselves
+live in `lib/`.
 
-Functions:
+`lib/dependencies.sh`:
 
 - `check_dependencies` — verifies `HandBrakeCLI` and `ffmpeg` are on PATH
+
+`lib/input.sh`:
+
 - `strip_quotes` — strips a single layer of surrounding `'` or `"` from user input
 - `default_name_from_iso` — derives the default output name from the ISO path (basename, no extension)
+- `resolve_output_path` — joins output directory, output name, and title into the final
+  `DIR/NAME_extracted/title_TITLE` path (strips a trailing slash from `DIR`)
+
+`lib/scan.sh`:
+
 - `parse_recommended_title` — extracts HandBrake's "Found main feature title N" from scan output
 - `parse_titles` — extracts all `+ title N:` numbers from scan output
 - `get_title_block` — slices the scan output down to one title's block
 - `get_duration` / `get_chapter_count` — pull duration and chapter count out of a title block
 - `is_valid_title` — checks a candidate title number against the known title list
-- `resolve_output_path` — joins output directory, output name, and title into the final
-  `DIR/NAME_extracted/title_TITLE` path (strips a trailing slash from `DIR`)
+
+Each `tests/lib/*.bats` file sources its matching `lib/*.sh` module directly (not `extractor.sh`),
+so unit tests stay isolated to one module. When adding a function, put it in the module matching
+its responsibility (dependency checks / input & path handling / scan parsing) and add its test to
+the corresponding `tests/lib/*.bats` file — don't grow `extractor.sh` itself beyond `main()`.
 
 `main()` flow, in order:
 
