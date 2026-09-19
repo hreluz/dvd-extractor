@@ -84,12 +84,16 @@ the corresponding `tests/lib/*.bats` file — don't grow `extractor.sh` itself b
    directory — `mkdir -p` handles the nonexistent case)
 6. `HandBrakeCLI --scan --main-feature` to enumerate titles and detect the recommended one
 7. Parse scan output to list titles, durations, and chapter counts
-8. Prompt for title selection, validate it
-9. Confirm before extracting
-10. Create `OUTPUT_DIR/NAME_extracted/title_TITLE/videos` and/or `.../audios`, whichever
-    `EXTRACT_MODE` needs (`resolve_output_path` builds the base path; `mkdir -p` creates any missing
-    parent directories)
-11. Loop over chapters, branching on `EXTRACT_MODE`:
+8. Prompt for title selection — a single title number, or `all` for every title found
+   (`SELECTED_TITLES` holds the resulting list; `is_valid_title` still gates a numeric answer, `all`
+   bypasses it)
+9. Show a summary for every title in `SELECTED_TITLES` (duration, chapter count, resolved output
+   path — cached per title in the `CHAPTERS_BY_TITLE`/`OUTPUT_BY_TITLE` associative arrays so the
+   extraction loop doesn't reparse the scan) and confirm once for the whole batch
+10. For each title in `SELECTED_TITLES`: create `OUTPUT_DIR/NAME_extracted/title_TITLE/videos`
+    and/or `.../audios`, whichever `EXTRACT_MODE` needs (`resolve_output_path` builds the base path;
+    `mkdir -p` creates any missing parent directories), then loop over that title's chapters,
+    branching on `EXTRACT_MODE`:
     - `both`: `HandBrakeCLI` extracts the chapter to MP4 (`Fast 480p30` preset), then `ffmpeg`
       extracts the corresponding MP3 (`libmp3lame`, 192k) from that video file
     - `video`: same `HandBrakeCLI` call only, no MP3
@@ -98,6 +102,8 @@ the corresponding `tests/lib/*.bats` file — don't grow `extractor.sh` itself b
       `ffmpeg -i pipe:0 -vn ...` — no `.mp4` is ever written to disk, only the `.mp3`. Requires
       `set -o pipefail` (set alongside `set -e` at the top of the script) so a failing `HandBrakeCLI`
       still fails the pipeline instead of being masked by `ffmpeg`'s exit code
+11. Print a final summary listing every extracted title's video/audio directories (from the
+    `VIDEO_DIR_BY_TITLE`/`AUDIO_DIR_BY_TITLE` associative arrays filled during step 10)
 
 ## Conventions to follow when editing
 

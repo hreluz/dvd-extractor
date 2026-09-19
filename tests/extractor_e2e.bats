@@ -419,6 +419,33 @@ EOF
     [ -f "movie_extracted/title_3/videos/chapter_01.mp4" ]
 }
 
+@test "extractor.sh extracts every title when 'all' is chosen" {
+    cd "$TEST_TMP"
+
+    run bash "$SCRIPT_DIR/extractor.sh" <<EOF
+
+
+$ISO
+
+
+all
+Y
+EOF
+
+    assert_success
+    assert_output --partial "Selected DVD title(s)"
+    assert_output --partial "Finished"
+
+    [ -f "movie_extracted/title_1/videos/chapter_01.mp4" ]
+    [ -f "movie_extracted/title_1/videos/chapter_04.mp4" ]
+    [ -f "movie_extracted/title_2/videos/chapter_01.mp4" ]
+    [ -f "movie_extracted/title_3/videos/chapter_01.mp4" ]
+    [ -f "movie_extracted/title_3/videos/chapter_05.mp4" ]
+    [ -f "movie_extracted/title_1/audios/chapter_01.mp3" ]
+    [ -f "movie_extracted/title_2/audios/chapter_01.mp3" ]
+    [ -f "movie_extracted/title_3/audios/chapter_01.mp3" ]
+}
+
 @test "extractor.sh reprompts instead of exiting on an invalid title choice" {
     cd "$TEST_TMP"
 
