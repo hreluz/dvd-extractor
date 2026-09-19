@@ -165,6 +165,9 @@ main() {
     echo "Output:   $OUTPUT"
     echo
 
+    read -rp "Extract MP3 audio for each chapter? [Y/n]: " EXTRACT_AUDIO
+    EXTRACT_AUDIO="${EXTRACT_AUDIO:-Y}"
+
     read -rp "Extract this title? [Y/n]: " CONFIRM
     CONFIRM="${CONFIRM:-Y}"
 
@@ -181,7 +184,9 @@ main() {
     AUDIO_DIR="$OUTPUT/audios"
 
     mkdir -p "$VIDEO_DIR"
-    mkdir -p "$AUDIO_DIR"
+    if [[ "$EXTRACT_AUDIO" =~ ^[Yy]$ ]]; then
+        mkdir -p "$AUDIO_DIR"
+    fi
 
     echo
     echo "Output directory:"
@@ -214,19 +219,21 @@ main() {
             --chapters "$i-$i" \
             --preset "Fast 480p30"
 
-        echo
-        echo "Creating MP3..."
-        echo
+        if [[ "$EXTRACT_AUDIO" =~ ^[Yy]$ ]]; then
+            echo
+            echo "Creating MP3..."
+            echo
 
-        ffmpeg \
-            -hide_banner \
-            -loglevel warning \
-            -y \
-            -i "$VIDEO" \
-            -vn \
-            -c:a libmp3lame \
-            -b:a 192k \
-            "$AUDIO"
+            ffmpeg \
+                -hide_banner \
+                -loglevel warning \
+                -y \
+                -i "$VIDEO" \
+                -vn \
+                -c:a libmp3lame \
+                -b:a 192k \
+                "$AUDIO"
+        fi
 
         echo
         echo "Chapter $i completed."
@@ -246,9 +253,12 @@ main() {
     echo "Videos:"
     echo "  $VIDEO_DIR"
     echo
-    echo "Audios:"
-    echo "  $AUDIO_DIR"
-    echo
+
+    if [[ "$EXTRACT_AUDIO" =~ ^[Yy]$ ]]; then
+        echo "Audios:"
+        echo "  $AUDIO_DIR"
+        echo
+    fi
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then

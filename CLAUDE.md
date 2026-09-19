@@ -69,11 +69,14 @@ the corresponding `tests/lib/*.bats` file — don't grow `extractor.sh` itself b
 5. `HandBrakeCLI --scan --main-feature` to enumerate titles and detect the recommended one
 6. Parse scan output to list titles, durations, and chapter counts
 7. Prompt for title selection, validate it
-8. Confirm before extracting
-9. Create `OUTPUT_DIR/NAME_extracted/title_TITLE/{videos,audios}` directories (`resolve_output_path`
-   builds this path; `mkdir -p` creates any missing parent directories)
-10. Loop over chapters: `HandBrakeCLI` extracts each chapter to MP4 (`Fast 480p30` preset), then
-    `ffmpeg` extracts the corresponding MP3 (`libmp3lame`, 192k) from that video
+8. Prompt whether to also extract MP3 audio (`EXTRACT_AUDIO`, defaults to yes)
+9. Confirm before extracting
+10. Create `OUTPUT_DIR/NAME_extracted/title_TITLE/videos` (and `.../audios` too, if audio was
+    requested) directories (`resolve_output_path` builds the base path; `mkdir -p` creates any
+    missing parent directories)
+11. Loop over chapters: `HandBrakeCLI` extracts each chapter to MP4 (`Fast 480p30` preset), then,
+    if audio was requested, `ffmpeg` extracts the corresponding MP3 (`libmp3lame`, 192k) from that
+    video
 
 ## Conventions to follow when editing
 

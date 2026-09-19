@@ -29,6 +29,7 @@ $ISO
 
 
 
+
 Y
 EOF
 
@@ -43,6 +44,26 @@ EOF
     [ ! -f "movie_extracted/title_3/videos/chapter_06.mp4" ]
 }
 
+@test "extractor.sh skips MP3 extraction when audio is declined" {
+    cd "$TEST_TMP"
+
+    run bash "$SCRIPT_DIR/extractor.sh" <<EOF
+$ISO
+
+
+
+n
+Y
+EOF
+
+    assert_success
+    assert_output --partial "Finished"
+    refute_output --partial "Audios:"
+
+    [ -f "movie_extracted/title_3/videos/chapter_01.mp4" ]
+    [ ! -d "movie_extracted/title_3/audios" ]
+}
+
 @test "extractor.sh honors a custom output name and explicit title selection" {
     cd "$TEST_TMP"
 
@@ -51,6 +72,7 @@ $ISO
 custom_name
 
 1
+
 Y
 EOF
 
@@ -70,6 +92,7 @@ $ISO
 
 $TEST_TMP/out_here
 
+
 Y
 EOF
 
@@ -86,6 +109,7 @@ EOF
 $ISO
 
 $TEST_TMP/does/not/exist/yet
+
 
 Y
 EOF
@@ -110,6 +134,7 @@ EOF
 
     run bash "$SCRIPT_DIR/extractor.sh" <<EOF
 $ISO
+
 
 
 

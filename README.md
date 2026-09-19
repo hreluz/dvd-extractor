@@ -20,7 +20,8 @@ The script will walk you through:
 3. **Output directory** — where the extracted files go; defaults to the current directory (`.`).
 4. **Scan** — HandBrake scans the ISO and lists all titles, their duration, and chapter count, highlighting its recommended "main feature" title.
 5. **Title selection** — pick a title (defaults to HandBrake's recommendation).
-6. **Confirmation** — review the selected title's details before extraction begins.
+6. **MP3 audio** — choose whether to also extract an MP3 per chapter; defaults to yes.
+7. **Confirmation** — review the selected title's details before extraction begins.
 
 ## Output
 
@@ -32,7 +33,7 @@ DIR/NAME_extracted/title_TITLE/
 │   ├── chapter_01.mp4
 │   ├── chapter_02.mp4
 │   └── ...
-└── audios/
+└── audios/            (only if MP3 extraction was requested)
     ├── chapter_01.mp3
     ├── chapter_02.mp3
     └── ...
@@ -43,7 +44,7 @@ DIR/NAME_extracted/title_TITLE/
 Each chapter of the selected title is extracted individually:
 
 - **Video**: MP4 via HandBrakeCLI, `Fast 480p30` preset.
-- **Audio**: MP3 extracted from each video with ffmpeg (`libmp3lame`, 192k).
+- **Audio** (optional): MP3 extracted from each video with ffmpeg (`libmp3lame`, 192k).
 
 ## Project layout
 
