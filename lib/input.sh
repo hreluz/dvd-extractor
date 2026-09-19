@@ -25,3 +25,13 @@ resolve_output_path() {
     output_dir="${output_dir%/}"
     printf '%s/%s_extracted/title_%s' "$output_dir" "$name" "$title"
 }
+
+resolve_extract_mode() {
+    local choice="$1"
+    case "$choice" in
+        ""|1) printf 'both' ;;
+        2) printf 'video' ;;
+        3) printf 'audio' ;;
+        *) return 1 ;;
+    esac
+}

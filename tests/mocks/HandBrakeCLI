@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Mock HandBrakeCLI used by end-to-end tests.
 # --scan: prints the fixture scan output referenced by $SCAN_FIXTURE_PATH.
-# extraction: creates an empty file at the -o path instead of transcoding.
+# extraction: creates an empty file at the -o path instead of transcoding, or
+# writes placeholder bytes to stdout when -o is "-" (piped-audio-only mode).
 
 set -e
 
@@ -29,7 +30,9 @@ if [[ "$SCAN_MODE" == true ]]; then
     exit 0
 fi
 
-if [[ -n "$OUTPUT" ]]; then
+if [[ "$OUTPUT" == "-" ]]; then
+    printf 'mock-video-bytes'
+elif [[ -n "$OUTPUT" ]]; then
     mkdir -p "$(dirname "$OUTPUT")"
     : > "$OUTPUT"
 fi

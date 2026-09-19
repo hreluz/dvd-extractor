@@ -46,6 +46,8 @@ live in `lib/`.
 - `default_name_from_iso` — derives the default output name from the ISO path (basename, no extension)
 - `resolve_output_path` — joins output directory, output name, and title into the final
   `DIR/NAME_extracted/title_TITLE` path (strips a trailing slash from `DIR`)
+- `resolve_extract_mode` — maps the "what to extract" menu choice (`""`/`1`/`2`/`3`) to
+  `both`/`both`/`video`/`audio`; returns non-zero for anything else
 
 `lib/scan.sh`:
 
@@ -63,20 +65,27 @@ the corresponding `tests/lib/*.bats` file — don't grow `extractor.sh` itself b
 `main()` flow, in order:
 
 1. Dependency checks
-2. Prompt for ISO path, validate it exists
-3. Prompt for output name (defaults to ISO basename)
-4. Prompt for output directory (defaults to `.`)
-5. `HandBrakeCLI --scan --main-feature` to enumerate titles and detect the recommended one
-6. Parse scan output to list titles, durations, and chapter counts
-7. Prompt for title selection, validate it
-8. Prompt whether to also extract MP3 audio (`EXTRACT_AUDIO`, defaults to yes)
+2. Prompt for what to extract per chapter — video+MP3 / video only / MP3 only (`EXTRACT_MODE`, via
+   `resolve_extract_mode`, defaults to both) — asked first since it doesn't depend on the ISO/title
+3. Prompt for ISO path, validate it exists
+4. Prompt for output name (defaults to ISO basename)
+5. Prompt for output directory (defaults to `.`)
+6. `HandBrakeCLI --scan --main-feature` to enumerate titles and detect the recommended one
+7. Parse scan output to list titles, durations, and chapter counts
+8. Prompt for title selection, validate it
 9. Confirm before extracting
-10. Create `OUTPUT_DIR/NAME_extracted/title_TITLE/videos` (and `.../audios` too, if audio was
-    requested) directories (`resolve_output_path` builds the base path; `mkdir -p` creates any
-    missing parent directories)
-11. Loop over chapters: `HandBrakeCLI` extracts each chapter to MP4 (`Fast 480p30` preset), then,
-    if audio was requested, `ffmpeg` extracts the corresponding MP3 (`libmp3lame`, 192k) from that
-    video
+10. Create `OUTPUT_DIR/NAME_extracted/title_TITLE/videos` and/or `.../audios`, whichever
+    `EXTRACT_MODE` needs (`resolve_output_path` builds the base path; `mkdir -p` creates any missing
+    parent directories)
+11. Loop over chapters, branching on `EXTRACT_MODE`:
+    - `both`: `HandBrakeCLI` extracts the chapter to MP4 (`Fast 480p30` preset), then `ffmpeg`
+      extracts the corresponding MP3 (`libmp3lame`, 192k) from that video file
+    - `video`: same `HandBrakeCLI` call only, no MP3
+    - `audio`: `HandBrakeCLI -o -` streams the encoded chapter to stdout (`--format av_mp4`, since
+      the container can't be inferred from a `-` filename) and pipes it directly into
+      `ffmpeg -i pipe:0 -vn ...` — no `.mp4` is ever written to disk, only the `.mp3`. Requires
+      `set -o pipefail` (set alongside `set -e` at the top of the script) so a failing `HandBrakeCLI`
+      still fails the pipeline instead of being masked by `ffmpeg`'s exit code
 
 ## Conventions to follow when editing
 

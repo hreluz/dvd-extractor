@@ -25,8 +25,8 @@ teardown() {
     cd "$TEST_TMP"
 
     run bash "$SCRIPT_DIR/extractor.sh" <<EOF
-$ISO
 
+$ISO
 
 
 
@@ -44,15 +44,15 @@ EOF
     [ ! -f "movie_extracted/title_3/videos/chapter_06.mp4" ]
 }
 
-@test "extractor.sh skips MP3 extraction when audio is declined" {
+@test "extractor.sh skips MP3 extraction in video-only mode" {
     cd "$TEST_TMP"
 
     run bash "$SCRIPT_DIR/extractor.sh" <<EOF
+2
 $ISO
 
 
 
-n
 Y
 EOF
 
@@ -64,15 +64,36 @@ EOF
     [ ! -d "movie_extracted/title_3/audios" ]
 }
 
+@test "extractor.sh skips the video file entirely in audio-only mode" {
+    cd "$TEST_TMP"
+
+    run bash "$SCRIPT_DIR/extractor.sh" <<EOF
+3
+$ISO
+
+
+
+Y
+EOF
+
+    assert_success
+    assert_output --partial "Finished"
+    refute_output --partial "Videos:"
+
+    [ -f "movie_extracted/title_3/audios/chapter_01.mp3" ]
+    [ -f "movie_extracted/title_3/audios/chapter_05.mp3" ]
+    [ ! -d "movie_extracted/title_3/videos" ]
+}
+
 @test "extractor.sh honors a custom output name and explicit title selection" {
     cd "$TEST_TMP"
 
     run bash "$SCRIPT_DIR/extractor.sh" <<EOF
+
 $ISO
 custom_name
 
 1
-
 Y
 EOF
 
@@ -88,10 +109,10 @@ EOF
     mkdir -p "$TEST_TMP/out_here"
 
     run bash "$SCRIPT_DIR/extractor.sh" <<EOF
+
 $ISO
 
 $TEST_TMP/out_here
-
 
 Y
 EOF
@@ -106,10 +127,10 @@ EOF
     cd "$TEST_TMP"
 
     run bash "$SCRIPT_DIR/extractor.sh" <<EOF
+
 $ISO
 
 $TEST_TMP/does/not/exist/yet
-
 
 Y
 EOF
@@ -122,6 +143,7 @@ EOF
     cd "$TEST_TMP"
 
     run bash "$SCRIPT_DIR/extractor.sh" <<EOF
+
 /no/such/file.iso
 EOF
 
@@ -129,12 +151,23 @@ EOF
     assert_output --partial "ISO not found"
 }
 
+@test "extractor.sh exits with an error for an invalid extract-mode choice" {
+    cd "$TEST_TMP"
+
+    run bash "$SCRIPT_DIR/extractor.sh" <<EOF
+9
+EOF
+
+    assert_failure
+    assert_output --partial "Invalid choice"
+}
+
 @test "extractor.sh cancels cleanly when extraction is declined" {
     cd "$TEST_TMP"
 
     run bash "$SCRIPT_DIR/extractor.sh" <<EOF
-$ISO
 
+$ISO
 
 
 

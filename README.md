@@ -15,12 +15,13 @@ An interactive bash script that rips a DVD ISO into per-chapter MP4 videos and M
 
 The script will walk you through:
 
-1. **ISO path** — enter the path to the DVD ISO file.
-2. **Output name** — defaults to the ISO filename (without extension).
-3. **Output directory** — where the extracted files go; defaults to the current directory (`.`).
-4. **Scan** — HandBrake scans the ISO and lists all titles, their duration, and chapter count, highlighting its recommended "main feature" title.
-5. **Title selection** — pick a title (defaults to HandBrake's recommendation).
-6. **MP3 audio** — choose whether to also extract an MP3 per chapter; defaults to yes.
+1. **What to extract** — video (MP4) and audio (MP3), video only, or audio only; defaults to both.
+   This is asked first, before anything else.
+2. **ISO path** — enter the path to the DVD ISO file.
+3. **Output name** — defaults to the ISO filename (without extension).
+4. **Output directory** — where the extracted files go; defaults to the current directory (`.`).
+5. **Scan** — HandBrake scans the ISO and lists all titles, their duration, and chapter count, highlighting its recommended "main feature" title.
+6. **Title selection** — pick a title (defaults to HandBrake's recommendation).
 7. **Confirmation** — review the selected title's details before extraction begins.
 
 ## Output
@@ -29,11 +30,11 @@ For output directory `DIR`, output name `NAME`, and selected title `TITLE`, the 
 
 ```
 DIR/NAME_extracted/title_TITLE/
-├── videos/
+├── videos/             (skipped in audio-only mode)
 │   ├── chapter_01.mp4
 │   ├── chapter_02.mp4
 │   └── ...
-└── audios/            (only if MP3 extraction was requested)
+└── audios/              (skipped in video-only mode)
     ├── chapter_01.mp3
     ├── chapter_02.mp3
     └── ...
@@ -44,7 +45,11 @@ DIR/NAME_extracted/title_TITLE/
 Each chapter of the selected title is extracted individually:
 
 - **Video**: MP4 via HandBrakeCLI, `Fast 480p30` preset.
-- **Audio** (optional): MP3 extracted from each video with ffmpeg (`libmp3lame`, 192k).
+- **Audio**: MP3 extracted with ffmpeg (`libmp3lame`, 192k). In **audio-only** mode, HandBrakeCLI's
+  output is piped directly into ffmpeg instead of being written to a `.mp4` first — the video is
+  still encoded internally (HandBrakeCLI has no audio-only mode), but the file itself is never
+  written to disk, so extraction is lighter on disk space and I/O even though it takes the same
+  amount of time as extracting video.
 
 ## Project layout
 

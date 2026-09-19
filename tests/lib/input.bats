@@ -81,3 +81,36 @@ setup() {
     assert_success
     assert_output 'some/dir/movie_extracted/title_3'
 }
+
+# -------------------------------------
+# resolve_extract_mode
+# -------------------------------------
+
+@test "resolve_extract_mode defaults to both on a blank choice" {
+    run resolve_extract_mode ''
+    assert_success
+    assert_output 'both'
+}
+
+@test "resolve_extract_mode maps 1 to both" {
+    run resolve_extract_mode '1'
+    assert_success
+    assert_output 'both'
+}
+
+@test "resolve_extract_mode maps 2 to video" {
+    run resolve_extract_mode '2'
+    assert_success
+    assert_output 'video'
+}
+
+@test "resolve_extract_mode maps 3 to audio" {
+    run resolve_extract_mode '3'
+    assert_success
+    assert_output 'audio'
+}
+
+@test "resolve_extract_mode rejects an unknown choice" {
+    run resolve_extract_mode '9'
+    assert_failure
+}

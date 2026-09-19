@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 set -e
+set -o pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -15,6 +16,24 @@ main() {
     echo
 
     check_dependencies || exit 1
+
+    # -------------------------------------
+    # Ask what to extract
+    # -------------------------------------
+
+    echo "What do you want to extract for each chapter?"
+    echo "  1) Video (MP4) and audio (MP3)"
+    echo "  2) Video (MP4) only"
+    echo "  3) Audio (MP3) only — no video file is kept"
+    read -rp "Choose [1]: " EXTRACT_CHOICE
+
+    if ! EXTRACT_MODE=$(resolve_extract_mode "$EXTRACT_CHOICE"); then
+        echo
+        echo "Error: Invalid choice: $EXTRACT_CHOICE"
+        exit 1
+    fi
+
+    echo
 
     # -------------------------------------
     # Ask for ISO
@@ -165,9 +184,6 @@ main() {
     echo "Output:   $OUTPUT"
     echo
 
-    read -rp "Extract MP3 audio for each chapter? [Y/n]: " EXTRACT_AUDIO
-    EXTRACT_AUDIO="${EXTRACT_AUDIO:-Y}"
-
     read -rp "Extract this title? [Y/n]: " CONFIRM
     CONFIRM="${CONFIRM:-Y}"
 
@@ -183,8 +199,10 @@ main() {
     VIDEO_DIR="$OUTPUT/videos"
     AUDIO_DIR="$OUTPUT/audios"
 
-    mkdir -p "$VIDEO_DIR"
-    if [[ "$EXTRACT_AUDIO" =~ ^[Yy]$ ]]; then
+    if [[ "$EXTRACT_MODE" == "both" || "$EXTRACT_MODE" == "video" ]]; then
+        mkdir -p "$VIDEO_DIR"
+    fi
+    if [[ "$EXTRACT_MODE" == "both" || "$EXTRACT_MODE" == "audio" ]]; then
         mkdir -p "$AUDIO_DIR"
     fi
 
@@ -209,31 +227,67 @@ main() {
         echo "======================================"
         echo
 
-        echo "Creating video..."
-        echo
+        case "$EXTRACT_MODE" in
+            both)
+                echo "Creating video..."
+                echo
 
-        HandBrakeCLI \
-            -i "$ISO" \
-            -o "$VIDEO" \
-            --title "$TITLE" \
-            --chapters "$i-$i" \
-            --preset "Fast 480p30"
+                HandBrakeCLI \
+                    -i "$ISO" \
+                    -o "$VIDEO" \
+                    --title "$TITLE" \
+                    --chapters "$i-$i" \
+                    --preset "Fast 480p30"
 
-        if [[ "$EXTRACT_AUDIO" =~ ^[Yy]$ ]]; then
-            echo
-            echo "Creating MP3..."
-            echo
+                echo
+                echo "Creating MP3..."
+                echo
 
-            ffmpeg \
-                -hide_banner \
-                -loglevel warning \
-                -y \
-                -i "$VIDEO" \
-                -vn \
-                -c:a libmp3lame \
-                -b:a 192k \
-                "$AUDIO"
-        fi
+                ffmpeg \
+                    -hide_banner \
+                    -loglevel warning \
+                    -y \
+                    -i "$VIDEO" \
+                    -vn \
+                    -c:a libmp3lame \
+                    -b:a 192k \
+                    "$AUDIO"
+                ;;
+
+            video)
+                echo "Creating video..."
+                echo
+
+                HandBrakeCLI \
+                    -i "$ISO" \
+                    -o "$VIDEO" \
+                    --title "$TITLE" \
+                    --chapters "$i-$i" \
+                    --preset "Fast 480p30"
+                ;;
+
+            audio)
+                echo "Creating MP3..."
+                echo
+
+                HandBrakeCLI \
+                    -i "$ISO" \
+                    -o - \
+                    --title "$TITLE" \
+                    --chapters "$i-$i" \
+                    --preset "Fast 480p30" \
+                    --format av_mp4 |
+                ffmpeg \
+                    -hide_banner \
+                    -loglevel warning \
+                    -y \
+                    -i pipe:0 \
+                    -vn \
+                    -c:a libmp3lame \
+                    -b:a 192k \
+                    "$AUDIO"
+                ;;
+        esac
 
         echo
         echo "Chapter $i completed."
@@ -250,11 +304,14 @@ main() {
     echo "======================================"
     echo
     echo "Title: $TITLE"
-    echo "Videos:"
-    echo "  $VIDEO_DIR"
-    echo
 
-    if [[ "$EXTRACT_AUDIO" =~ ^[Yy]$ ]]; then
+    if [[ "$EXTRACT_MODE" == "both" || "$EXTRACT_MODE" == "video" ]]; then
+        echo "Videos:"
+        echo "  $VIDEO_DIR"
+        echo
+    fi
+
+    if [[ "$EXTRACT_MODE" == "both" || "$EXTRACT_MODE" == "audio" ]]; then
         echo "Audios:"
         echo "  $AUDIO_DIR"
         echo
