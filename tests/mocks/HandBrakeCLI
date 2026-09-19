@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Mock HandBrakeCLI used by end-to-end tests.
+# --scan: prints the fixture scan output referenced by $SCAN_FIXTURE_PATH.
+# extraction: creates an empty file at the -o path instead of transcoding.
+
+set -e
+
+SCAN_MODE=false
+OUTPUT=""
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --scan)
+            SCAN_MODE=true
+            shift
+            ;;
+        -o)
+            OUTPUT="$2"
+            shift 2
+            ;;
+        *)
+            shift
+            ;;
+    esac
+done
+
+if [[ "$SCAN_MODE" == true ]]; then
+    cat "${SCAN_FIXTURE_PATH:?SCAN_FIXTURE_PATH must be set}"
+    exit 0
+fi
+
+if [[ -n "$OUTPUT" ]]; then
+    mkdir -p "$(dirname "$OUTPUT")"
+    : > "$OUTPUT"
+fi

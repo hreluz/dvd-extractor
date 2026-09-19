@@ -1,0 +1,39 @@
+Scanning title 1 of 3...
++ title 1:
+  + vts 1, ttn 1, cells 0->12, 999999 blocks, duration 00:42:10
+  + duration: 00:42:10
+  + size: 720x480, aspect: 1.33, 29.970 fps
+  + autocrop: 0/0/0/0
+  + chapters:
+    + 1: cells 0->2, 1500 blocks, duration 00:10:00
+    + 2: cells 3->5, 1500 blocks, duration 00:10:00
+    + 3: cells 6->8, 1500 blocks, duration 00:10:00
+    + 4: cells 9->12, 1500 blocks, duration 00:12:10
+  + audio tracks:
+    + 1, English (AC3, 2.0 ch)
+  + subtitle tracks:
+    + 1, English
+
++ title 2:
+  + vts 2, ttn 1, cells 0->3, 99999 blocks, duration 00:05:30
+  + duration: 00:05:30
+  + size: 720x480, aspect: 1.33, 29.970 fps
+  + chapters:
+    + 1: cells 0->3, 500 blocks, duration 00:05:30
+  + audio tracks:
+    + 1, English (AC3, 2.0 ch)
+
++ title 3:
+  + vts 3, ttn 1, cells 0->25, 999999 blocks, duration 01:32:05
+  + duration: 01:32:05
+  + size: 720x480, aspect: 1.33, 29.970 fps
+  + chapters:
+    + 1: cells 0->5, duration 00:20:00
+    + 2: cells 6->10, duration 00:20:00
+    + 3: cells 11->15, duration 00:20:00
+    + 4: cells 16->20, duration 00:20:00
+    + 5: cells 21->25, duration 00:12:05
+  + audio tracks:
+    + 1, English (AC3, 2.0 ch)
+
+Found main feature title 3
