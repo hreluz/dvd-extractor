@@ -86,6 +86,14 @@ is_valid_title() {
     return 1
 }
 
+resolve_output_path() {
+    local output_dir="$1"
+    local name="$2"
+    local title="$3"
+    output_dir="${output_dir%/}"
+    printf '%s/%s_extracted/title_%s' "$output_dir" "$name" "$title"
+}
+
 main() {
     echo "======================================"
     echo "       DVD Chapter Extractor"
@@ -116,6 +124,14 @@ main() {
 
     read -rp "Output name [$DEFAULT_NAME]: " NAME
     NAME="${NAME:-$DEFAULT_NAME}"
+
+    # -------------------------------------
+    # Ask for output directory
+    # -------------------------------------
+
+    read -rp "Output directory [.]: " OUTPUT_DIR
+    OUTPUT_DIR="${OUTPUT_DIR:-.}"
+    OUTPUT_DIR=$(strip_quotes "$OUTPUT_DIR")
 
     # -------------------------------------
     # Scan DVD
@@ -217,6 +233,8 @@ main() {
         exit 1
     fi
 
+    OUTPUT=$(resolve_output_path "$OUTPUT_DIR" "$NAME" "$TITLE")
+
     # -------------------------------------
     # Show selection
     # -------------------------------------
@@ -230,6 +248,7 @@ main() {
     echo "Title:    $TITLE"
     echo "Duration: $DURATION"
     echo "Chapters: $CHAPTERS"
+    echo "Output:   $OUTPUT"
     echo
 
     read -rp "Extract this title? [Y/n]: " CONFIRM
@@ -244,7 +263,6 @@ main() {
     # Create output directories
     # -------------------------------------
 
-    OUTPUT="${NAME}_extracted/title_${TITLE}"
     VIDEO_DIR="$OUTPUT/videos"
     AUDIO_DIR="$OUTPUT/audios"
 

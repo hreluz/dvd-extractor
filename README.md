@@ -17,16 +17,17 @@ The script will walk you through:
 
 1. **ISO path** — enter the path to the DVD ISO file.
 2. **Output name** — defaults to the ISO filename (without extension).
-3. **Scan** — HandBrake scans the ISO and lists all titles, their duration, and chapter count, highlighting its recommended "main feature" title.
-4. **Title selection** — pick a title (defaults to HandBrake's recommendation).
-5. **Confirmation** — review the selected title's details before extraction begins.
+3. **Output directory** — where the extracted files go; defaults to the current directory (`.`).
+4. **Scan** — HandBrake scans the ISO and lists all titles, their duration, and chapter count, highlighting its recommended "main feature" title.
+5. **Title selection** — pick a title (defaults to HandBrake's recommendation).
+6. **Confirmation** — review the selected title's details before extraction begins.
 
 ## Output
 
-For an output name `NAME` and selected title `TITLE`, the script creates:
+For output directory `DIR`, output name `NAME`, and selected title `TITLE`, the script creates:
 
 ```
-NAME_extracted/title_TITLE/
+DIR/NAME_extracted/title_TITLE/
 ├── videos/
 │   ├── chapter_01.mp4
 │   ├── chapter_02.mp4
@@ -36,6 +37,8 @@ NAME_extracted/title_TITLE/
     ├── chapter_02.mp3
     └── ...
 ```
+
+`DIR` (and any missing parent directories) is created automatically if it doesn't already exist.
 
 Each chapter of the selected title is extracted individually:
 

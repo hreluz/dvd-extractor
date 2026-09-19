@@ -140,3 +140,37 @@ setup() {
     run is_valid_title 1
     assert_failure
 }
+
+# -------------------------------------
+# resolve_output_path
+# -------------------------------------
+
+@test "resolve_output_path builds the path under the current directory" {
+    run resolve_output_path '.' 'movie' '3'
+    assert_success
+    assert_output './movie_extracted/title_3'
+}
+
+@test "resolve_output_path builds the path under a custom directory" {
+    run resolve_output_path '/mnt/media' 'movie' '3'
+    assert_success
+    assert_output '/mnt/media/movie_extracted/title_3'
+}
+
+@test "resolve_output_path strips a trailing slash from the directory" {
+    run resolve_output_path '/mnt/media/' 'movie' '3'
+    assert_success
+    assert_output '/mnt/media/movie_extracted/title_3'
+}
+
+@test "resolve_output_path handles the root directory" {
+    run resolve_output_path '/' 'movie' '3'
+    assert_success
+    assert_output '/movie_extracted/title_3'
+}
+
+@test "resolve_output_path handles a relative subdirectory" {
+    run resolve_output_path 'some/dir' 'movie' '3'
+    assert_success
+    assert_output 'some/dir/movie_extracted/title_3'
+}

@@ -28,6 +28,7 @@ teardown() {
 $ISO
 
 
+
 Y
 EOF
 
@@ -48,6 +49,7 @@ EOF
     run bash "$SCRIPT_DIR/extractor.sh" <<EOF
 $ISO
 custom_name
+
 1
 Y
 EOF
@@ -56,6 +58,40 @@ EOF
     [ -d "custom_name_extracted/title_1/videos" ]
     [ -f "custom_name_extracted/title_1/videos/chapter_04.mp4" ]
     [ ! -f "custom_name_extracted/title_1/videos/chapter_05.mp4" ]
+}
+
+@test "extractor.sh writes into a custom output directory" {
+    cd "$TEST_TMP"
+
+    mkdir -p "$TEST_TMP/out_here"
+
+    run bash "$SCRIPT_DIR/extractor.sh" <<EOF
+$ISO
+
+$TEST_TMP/out_here
+
+Y
+EOF
+
+    assert_success
+    assert_output --partial "Output:   $TEST_TMP/out_here/movie_extracted/title_3"
+    [ -f "$TEST_TMP/out_here/movie_extracted/title_3/videos/chapter_01.mp4" ]
+    [ ! -d "$TEST_TMP/movie_extracted" ]
+}
+
+@test "extractor.sh creates a nonexistent output directory" {
+    cd "$TEST_TMP"
+
+    run bash "$SCRIPT_DIR/extractor.sh" <<EOF
+$ISO
+
+$TEST_TMP/does/not/exist/yet
+
+Y
+EOF
+
+    assert_success
+    [ -f "$TEST_TMP/does/not/exist/yet/movie_extracted/title_3/videos/chapter_01.mp4" ]
 }
 
 @test "extractor.sh exits with an error for a missing ISO" {
@@ -74,6 +110,7 @@ EOF
 
     run bash "$SCRIPT_DIR/extractor.sh" <<EOF
 $ISO
+
 
 
 n

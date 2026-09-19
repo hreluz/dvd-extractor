@@ -44,19 +44,23 @@ Functions:
 - `get_title_block` — slices the scan output down to one title's block
 - `get_duration` / `get_chapter_count` — pull duration and chapter count out of a title block
 - `is_valid_title` — checks a candidate title number against the known title list
+- `resolve_output_path` — joins output directory, output name, and title into the final
+  `DIR/NAME_extracted/title_TITLE` path (strips a trailing slash from `DIR`)
 
 `main()` flow, in order:
 
 1. Dependency checks
 2. Prompt for ISO path, validate it exists
 3. Prompt for output name (defaults to ISO basename)
-4. `HandBrakeCLI --scan --main-feature` to enumerate titles and detect the recommended one
-5. Parse scan output to list titles, durations, and chapter counts
-6. Prompt for title selection, validate it
-7. Confirm before extracting
-8. Create `NAME_extracted/title_TITLE/{videos,audios}` directories
-9. Loop over chapters: `HandBrakeCLI` extracts each chapter to MP4 (`Fast 480p30` preset), then
-   `ffmpeg` extracts the corresponding MP3 (`libmp3lame`, 192k) from that video
+4. Prompt for output directory (defaults to `.`)
+5. `HandBrakeCLI --scan --main-feature` to enumerate titles and detect the recommended one
+6. Parse scan output to list titles, durations, and chapter counts
+7. Prompt for title selection, validate it
+8. Confirm before extracting
+9. Create `OUTPUT_DIR/NAME_extracted/title_TITLE/{videos,audios}` directories (`resolve_output_path`
+   builds this path; `mkdir -p` creates any missing parent directories)
+10. Loop over chapters: `HandBrakeCLI` extracts each chapter to MP4 (`Fast 480p30` preset), then
+    `ffmpeg` extracts the corresponding MP3 (`libmp3lame`, 192k) from that video
 
 ## Conventions to follow when editing
 
