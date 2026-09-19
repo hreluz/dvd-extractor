@@ -21,50 +21,118 @@ main() {
     # Ask what to extract
     # -------------------------------------
 
-    echo "What do you want to extract for each chapter?"
-    echo "  1) Video (MP4) and audio (MP3)"
-    echo "  2) Video (MP4) only"
-    echo "  3) Audio (MP3) only — no video file is kept"
-    read -rp "Choose [1]: " EXTRACT_CHOICE
+    while true; do
 
-    if ! EXTRACT_MODE=$(resolve_extract_mode "$EXTRACT_CHOICE"); then
+        while true; do
+            echo "What do you want to extract for each chapter?"
+            echo "  1) Video (MP4) and audio (MP3)"
+            echo "  2) Video (MP4) only"
+            echo "  3) Audio (MP3) only — no video file is kept"
+            echo "  q) Quit"
+
+            if ! read -rp "Choose [1]: " EXTRACT_CHOICE; then
+                echo
+                exit 1
+            fi
+
+            if [[ "$EXTRACT_CHOICE" =~ ^[Qq]$ ]]; then
+                echo "Exiting."
+                exit 0
+            fi
+
+            if EXTRACT_MODE=$(resolve_extract_mode "$EXTRACT_CHOICE"); then
+                break
+            fi
+
+            echo
+            echo "Invalid choice: $EXTRACT_CHOICE"
+            echo
+        done
+
         echo
-        echo "Error: Invalid choice: $EXTRACT_CHOICE"
-        exit 1
-    fi
 
-    echo
+        # -------------------------------------
+        # Ask for ISO
+        # -------------------------------------
 
-    # -------------------------------------
-    # Ask for ISO
-    # -------------------------------------
+        while true; do
+            if ! read -rp "Enter the path to the DVD ISO (b to go back, q to quit): " ISO; then
+                echo
+                exit 1
+            fi
+            ISO=$(strip_quotes "$ISO")
 
-    read -rp "Enter the path to the DVD ISO: " ISO
-    ISO=$(strip_quotes "$ISO")
+            if [[ "$ISO" =~ ^[Qq]$ ]]; then
+                echo "Exiting."
+                exit 0
+            fi
 
-    if [ ! -f "$ISO" ]; then
-        echo
-        echo "Error: ISO not found:"
-        echo "$ISO"
-        exit 1
-    fi
+            if [[ "$ISO" =~ ^[Bb]$ ]]; then
+                echo
+                continue 2
+            fi
 
-    # -------------------------------------
-    # Ask for output name
-    # -------------------------------------
+            if [ -f "$ISO" ]; then
+                break
+            fi
+
+            echo
+            echo "ISO not found: $ISO"
+            echo
+        done
+
+        break
+    done
 
     DEFAULT_NAME=$(default_name_from_iso "$ISO")
 
-    read -rp "Output name [$DEFAULT_NAME]: " NAME
-    NAME="${NAME:-$DEFAULT_NAME}"
+    while true; do
 
-    # -------------------------------------
-    # Ask for output directory
-    # -------------------------------------
+        # -------------------------------------
+        # Ask for output name
+        # -------------------------------------
 
-    read -rp "Output directory [.]: " OUTPUT_DIR
-    OUTPUT_DIR="${OUTPUT_DIR:-.}"
-    OUTPUT_DIR=$(strip_quotes "$OUTPUT_DIR")
+        if ! read -rp "Output name [$DEFAULT_NAME]: " NAME; then
+            echo
+            exit 1
+        fi
+        NAME="${NAME:-$DEFAULT_NAME}"
+
+        # -------------------------------------
+        # Ask for output directory
+        # -------------------------------------
+
+        while true; do
+            if ! read -rp "Output directory [.] (b to go back, q to quit): " OUTPUT_DIR; then
+                echo
+                exit 1
+            fi
+
+            if [[ "$OUTPUT_DIR" =~ ^[Qq]$ ]]; then
+                echo "Exiting."
+                exit 0
+            fi
+
+            if [[ "$OUTPUT_DIR" =~ ^[Bb]$ ]]; then
+                echo
+                continue 2
+            fi
+
+            OUTPUT_DIR="${OUTPUT_DIR:-.}"
+            OUTPUT_DIR=$(strip_quotes "$OUTPUT_DIR")
+
+            if [ -e "$OUTPUT_DIR" ] && [ ! -d "$OUTPUT_DIR" ]; then
+                echo
+                echo "Output path exists and is not a directory: $OUTPUT_DIR"
+                echo
+                continue
+            fi
+
+            break
+        done
+
+        break
+    done
 
     # -------------------------------------
     # Scan DVD
@@ -135,22 +203,33 @@ main() {
     # Ask user which title to extract
     # -------------------------------------
 
-    if [ -n "$RECOMMENDED_TITLE" ]; then
-        read -rp "Select title [$RECOMMENDED_TITLE]: " TITLE
-        TITLE="${TITLE:-$RECOMMENDED_TITLE}"
-    else
-        read -rp "Select title: " TITLE
-    fi
+    while true; do
+        if [ -n "$RECOMMENDED_TITLE" ]; then
+            if ! read -rp "Select title [$RECOMMENDED_TITLE] (q to quit): " TITLE; then
+                echo
+                exit 1
+            fi
+            TITLE="${TITLE:-$RECOMMENDED_TITLE}"
+        else
+            if ! read -rp "Select title (q to quit): " TITLE; then
+                echo
+                exit 1
+            fi
+        fi
 
-    # -------------------------------------
-    # Validate selected title
-    # -------------------------------------
+        if [[ "$TITLE" =~ ^[Qq]$ ]]; then
+            echo "Exiting."
+            exit 0
+        fi
 
-    if ! is_valid_title "$TITLE" "${TITLES[@]}"; then
+        if is_valid_title "$TITLE" "${TITLES[@]}"; then
+            break
+        fi
+
         echo
-        echo "Error: Invalid title: $TITLE"
-        exit 1
-    fi
+        echo "Invalid title: $TITLE"
+        echo
+    done
 
     # -------------------------------------
     # Get selected title information

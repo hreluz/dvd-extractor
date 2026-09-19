@@ -139,27 +139,177 @@ EOF
     [ -f "$TEST_TMP/does/not/exist/yet/movie_extracted/title_3/videos/chapter_01.mp4" ]
 }
 
-@test "extractor.sh exits with an error for a missing ISO" {
+@test "extractor.sh reprompts instead of exiting for a missing ISO" {
     cd "$TEST_TMP"
 
     run bash "$SCRIPT_DIR/extractor.sh" <<EOF
 
 /no/such/file.iso
+$ISO
+
+
+
+Y
 EOF
 
-    assert_failure
-    assert_output --partial "ISO not found"
+    assert_success
+    assert_output --partial "ISO not found: /no/such/file.iso"
+    assert_output --partial "Finished"
+    [ -f "movie_extracted/title_3/videos/chapter_01.mp4" ]
 }
 
-@test "extractor.sh exits with an error for an invalid extract-mode choice" {
+@test "extractor.sh quits cleanly from the ISO prompt" {
+    cd "$TEST_TMP"
+
+    run bash "$SCRIPT_DIR/extractor.sh" <<EOF
+
+q
+EOF
+
+    assert_success
+    assert_output --partial "Exiting."
+    [ ! -d "movie_extracted" ]
+}
+
+@test "extractor.sh goes back to the extract-mode menu from the ISO prompt" {
+    cd "$TEST_TMP"
+
+    run bash "$SCRIPT_DIR/extractor.sh" <<EOF
+
+b
+2
+$ISO
+
+
+
+Y
+EOF
+
+    assert_success
+    assert_output --partial "Finished"
+    refute_output --partial "Audios:"
+    [ -f "movie_extracted/title_3/videos/chapter_01.mp4" ]
+}
+
+@test "extractor.sh reprompts instead of exiting on an invalid extract-mode choice" {
     cd "$TEST_TMP"
 
     run bash "$SCRIPT_DIR/extractor.sh" <<EOF
 9
+1
+$ISO
+
+
+
+Y
 EOF
 
-    assert_failure
-    assert_output --partial "Invalid choice"
+    assert_success
+    assert_output --partial "Invalid choice: 9"
+    assert_output --partial "Finished"
+    [ -f "movie_extracted/title_3/videos/chapter_01.mp4" ]
+}
+
+@test "extractor.sh quits cleanly from the extract-mode menu" {
+    cd "$TEST_TMP"
+
+    run bash "$SCRIPT_DIR/extractor.sh" <<EOF
+q
+EOF
+
+    assert_success
+    assert_output --partial "Exiting."
+    [ ! -d "movie_extracted" ]
+}
+
+@test "extractor.sh reprompts instead of exiting on an invalid title choice" {
+    cd "$TEST_TMP"
+
+    run bash "$SCRIPT_DIR/extractor.sh" <<EOF
+
+$ISO
+
+
+99
+3
+Y
+EOF
+
+    assert_success
+    assert_output --partial "Invalid title: 99"
+    assert_output --partial "Finished"
+    [ -f "movie_extracted/title_3/videos/chapter_01.mp4" ]
+}
+
+@test "extractor.sh quits cleanly from the title selection menu" {
+    cd "$TEST_TMP"
+
+    run bash "$SCRIPT_DIR/extractor.sh" <<EOF
+
+$ISO
+
+
+q
+EOF
+
+    assert_success
+    assert_output --partial "Exiting."
+    [ ! -d "movie_extracted" ]
+}
+
+@test "extractor.sh reprompts when the output directory path is an existing file" {
+    cd "$TEST_TMP"
+
+    : > "$TEST_TMP/not_a_dir"
+
+    run bash "$SCRIPT_DIR/extractor.sh" <<EOF
+
+$ISO
+
+$TEST_TMP/not_a_dir
+$TEST_TMP/out_here
+
+Y
+EOF
+
+    assert_success
+    assert_output --partial "Output path exists and is not a directory: $TEST_TMP/not_a_dir"
+    assert_output --partial "Finished"
+    [ -f "$TEST_TMP/out_here/movie_extracted/title_3/videos/chapter_01.mp4" ]
+}
+
+@test "extractor.sh quits cleanly from the output directory prompt" {
+    cd "$TEST_TMP"
+
+    run bash "$SCRIPT_DIR/extractor.sh" <<EOF
+
+$ISO
+
+q
+EOF
+
+    assert_success
+    assert_output --partial "Exiting."
+    [ ! -d "movie_extracted" ]
+}
+
+@test "extractor.sh goes back to the output name prompt from the output directory prompt" {
+    cd "$TEST_TMP"
+
+    run bash "$SCRIPT_DIR/extractor.sh" <<EOF
+
+$ISO
+
+b
+custom_name
+
+
+Y
+EOF
+
+    assert_success
+    assert_output --partial "Finished"
+    [ -f "custom_name_extracted/title_3/videos/chapter_01.mp4" ]
 }
 
 @test "extractor.sh cancels cleanly when extraction is declined" {
